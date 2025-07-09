@@ -45,9 +45,9 @@ public class UserLoginTest {
     }
 
     @Test
-    @DisplayName("Попытка логина пользователя, если пара логин-пароль несуществующая. Тело ответа success: false, message: email or password are incorrect, код ответа 401 Unauthorized.")
+    @DisplayName("Попытка логина пользователя, если логин неверный. Тело ответа success: false, message: email or password are incorrect, код ответа 401 Unauthorized.")
     @Description("Негативная проверка POST-запроса api/auth/login")
-    public void loginUserWithWrongPairTest(){
+    public void loginUserWithWrongLoginTest(){
         String name = RandomStringUtils.randomAlphanumeric(4, 10);
         String email = RandomStringUtils.randomAlphanumeric(4, 10) + "@yandex.ru";
         String password = RandomStringUtils.randomAlphabetic(4, 10);
@@ -56,7 +56,32 @@ public class UserLoginTest {
         userCreate.sendPostRequestCreateUser(user);
 
         email = "AbsolutelyWrongEmail.@yandex.ru";
-        password = "AbsolutelyWrongPassword.@yandex.ru";
+
+        UserBasis userSad = new UserBasis();
+        userSad.setUserEmail(email);
+        userSad.setUserPassword(password);
+
+        Response response = userCreate.sendPostRequestLoginUser(userSad);
+        response.then().log().all()
+                .assertThat().statusCode(401).and().body( "success", Matchers.is(false)).and().body( "message", Matchers.is("email or password are incorrect"));
+
+        if(response.path("accessToken") != null) {
+            accessToken = response.then().extract().path("accessToken").toString();
+        }
+    }
+
+    @Test
+    @DisplayName("Попытка логина пользователя, если пароль неверный. Тело ответа success: false, message: email or password are incorrect, код ответа 401 Unauthorized.")
+    @Description("Негативная проверка POST-запроса api/auth/login")
+    public void loginUserWithWrongPasswordTest(){
+        String name = RandomStringUtils.randomAlphanumeric(4, 10);
+        String email = RandomStringUtils.randomAlphanumeric(4, 10) + "@yandex.ru";
+        String password = RandomStringUtils.randomAlphabetic(4, 10);
+        UserBasis user = new UserBasis(name, email, password);
+
+        userCreate.sendPostRequestCreateUser(user);
+
+        password = "AbsolutelyWrongPassword";
 
         UserBasis userSad = new UserBasis();
         userSad.setUserEmail(email);
